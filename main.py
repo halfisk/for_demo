@@ -2,7 +2,7 @@ import logging
 import os
 from dotenv import load_dotenv
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, ConversationHandler, filters
-from handlers import start, request_name, send_intro_message, handle_consent, handle_platform_choice, handle_stage, error_handler
+from handlers import start, request_name, send_intro_message, handle_consent, handle_platform_choice, handle_stage, handle_callback_query, error_handler
 from config import CONNECT, NAME_REQUEST, CONSENT, PLATFORM, ORDER_NUMBER, CONTACT, EMAIL, BIRTHDAY, FEEDBACK, FINAL
 
 logging.basicConfig(
@@ -34,6 +34,7 @@ def main() -> None:
     )
 
     application.add_handler(conv_handler)
+    application.add_handler(CallbackQueryHandler(handle_callback_query, pattern='^show_photos_|show_pdf_|choose_platform$'))
     application.add_error_handler(error_handler)
 
     application.run_polling()

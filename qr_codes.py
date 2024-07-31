@@ -29,3 +29,5 @@ if __name__ == "__main__":
     category = "blanket"  
     img_path = generate_qr_code(category, bot_username)
     print(f"QR-код сохранен по адресу: {img_path}")
+
+# https://t.me/MirrorSleep_customer_bot?start=Постельное белье
