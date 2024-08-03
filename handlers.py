@@ -5,7 +5,7 @@ from telegram import InputMediaPhoto, Update, InlineKeyboardButton, InlineKeyboa
 from telegram.ext import CallbackContext
 from qr_codes import get_product_category
 from utils import is_cyrillic, send_messages
-from config import CONNECT, NAME_REQUEST, CONSENT, PLATFORM, ORDER_NUMBER, CONTACT, EMAIL, BIRTHDAY, FINAL, messages, photo_paths, category_cases, platforms, pdf_paths
+from config import CONNECT, NAME_REQUEST, CONSENT, PLATFORM, ORDER_NUMBER, CONTACT, EMAIL, BIRTHDAY, FINAL, MAIN_MENU, PERSONAL_CABINET, messages, photo_paths, category_cases, platforms, pdf_paths
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +13,10 @@ user_data = {}
 
 async def start(update: Update, context: CallbackContext) -> int:
     user_id = update.message.from_user.id
+
+    if user_id in user_data:
+        return await show_main_menu(update, context)
+
     args = context.args
     category = get_product_category(args[0]) if args else 'Unknown category'
 
@@ -27,6 +31,31 @@ async def start(update: Update, context: CallbackContext) -> int:
     )
     
     return CONNECT
+
+async def show_main_menu(update: Update, context: CallbackContext) -> int:
+    if update.message:
+        user_id = update.message.from_user.id
+        chat_id = update.message.chat_id
+    elif update.callback_query:
+        user_id = update.callback_query.from_user.id
+        chat_id = update.callback_query.message.chat_id
+    else:
+        logger.error("No valid user found in update")
+        return MAIN_MENU
+
+    if user_id not in user_data:
+        user_data[user_id] = {}
+
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text="Привет! Вы в главном меню.",
+        reply_markup=ReplyKeyboardMarkup([['Личный кабинет']], one_time_keyboard=True)
+    )
+
+    user_data[user_id]['stage'] = MAIN_MENU
+    return MAIN_MENU
+
+
 
 async def request_name(update: Update, context: CallbackContext) -> int:
     user_id = update.message.from_user.id
@@ -46,8 +75,6 @@ async def send_intro_message(update: Update, context: CallbackContext) -> int:
         await update.message.reply_text("Пожалуйста, введите свое имя на русском языке.")
         return NAME_REQUEST
 
-    # await send_video(update, context)
-
     intro_message = get_intro_message(user_info)
     await send_messages(update.message, context, [
         intro_message, 
@@ -57,19 +84,6 @@ async def send_intro_message(update: Update, context: CallbackContext) -> int:
     ], parse_mode='HTML')
 
     return await request_consent(update, context)
-
-# async def send_video(update: Update, context: CallbackContext) -> None:
-#     video_path = 'video/preview/tests.mp4'
-#     try:
-#         with open(video_path, 'rb') as video_file:
-#             await context.bot.send_video(
-#                 chat_id=update.effective_chat.id, 
-#                 video=video_file, 
-#                 caption=messages["video"]
-#             )
-#     except Exception as e:
-#         logger.error(f"Error sending video: {e}")
-#         await update.message.reply_text("Произошла ошибка при отправке видео. Пожалуйста, попробуйте позже.")
 
 def get_intro_message(user_info):
     if user_info['category'] == 'Постельное белье':
@@ -140,8 +154,13 @@ async def handle_platform_choice(update: Update, context: CallbackContext) -> in
 
     logger.info(f"Sending platform photos for: {platform}")
     await send_platform_photos(context, query, platform)
-    
+
     user_data[user_id]['stage'] = ORDER_NUMBER
+
+    if 'order_number_prompt_sent' not in user_data[user_id]:
+        await query.message.reply_text(messages["order_number_prompt"])
+        user_data[user_id]['order_number_prompt_sent'] = True
+
     return ORDER_NUMBER
 
 async def send_platform_photos(context: CallbackContext, query: Update, platform: str):
@@ -174,9 +193,6 @@ async def send_platform_photos(context: CallbackContext, query: Update, platform
     else:
         await query.message.reply_text("На данный момент у нас нет инструкций для выбранной платформы.")
         logger.info("No instructions available for the chosen platform")
-    
-    # await query.message.reply_text(messages["order_number_prompt"])
-    logger.info("Displayed order number prompt")
 
 async def show_pdf(context: CallbackContext, query: Update, platform: str):
     pdf_path = pdf_paths.get(platform)
@@ -213,8 +229,7 @@ async def show_pdf(context: CallbackContext, query: Update, platform: str):
         user_data[query.from_user.id]['instruction_message_ids'].append(switch_message.message_id)
     else:
         await query.message.reply_text("На данный момент у нас нет инструкций для выбранной платформы в формате PDF.")
-    
-    # Display order number prompt
+
     await query.message.reply_text(messages["order_number_prompt"])
     logger.info("Displayed order number prompt")
 
@@ -234,7 +249,7 @@ async def show_photos(context: CallbackContext, query: Update, platform: str):
                 chat_id=query.message.chat_id,
                 media=media_group
             )
-            message_ids = [msg.message_id for msg in messages_list]  
+            message_ids = [msg.message_id for msg in messages_list]
             logger.info(f"Sent photos: {message_ids}")
         except Exception as e:
             logger.error(f"Error sending photos: {e}")
@@ -253,8 +268,7 @@ async def show_photos(context: CallbackContext, query: Update, platform: str):
         user_data[query.from_user.id]['instruction_message_ids'].append(switch_message.message_id)
     else:
         await query.message.reply_text("На данный момент у нас нет инструкций для выбранной платформы.")
-    
-    # Display order number prompt
+
     await query.message.reply_text(messages["order_number_prompt"])
     logger.info("Displayed order number prompt")
 
@@ -267,6 +281,7 @@ async def handle_callback_query(update: Update, context: CallbackContext) -> int
 
     if query.data == "choose_platform":
         logger.info("Choosing platform")
+        user_data[user_id]['stage'] = PLATFORM
         await show_platforms(query, context)
         return PLATFORM
     elif query.data.startswith('show_photos_'):
@@ -279,10 +294,91 @@ async def handle_callback_query(update: Update, context: CallbackContext) -> int
         logger.info(f"Showing PDF for platform: {platform}")
         await show_pdf(context, query, platform)
         return PLATFORM
+    elif query.data == "confirm_yes":
+        logger.info("User confirmed data is correct")
+        return await show_main_menu(update, context)  # Передаем update вместо query
+    elif query.data == "confirm_no":
+        logger.info("User requested to change data")
+        await query.message.reply_text("Какие данные вы хотите изменить?", reply_markup=ReplyKeyboardMarkup(
+            [["Имя", "Категория", "Площадка", "Номер заказа", "Контакт", "Email", "Дата рождения"]],
+            one_time_keyboard=True,
+            resize_keyboard=True
+        ))
+        return FINAL
+    elif query.data == "main_menu":
+        return await show_main_menu(update, context)  # Передаем update вместо query
+    elif query.data == "personal_cabinet":
+        return await show_personal_cabinet(update, context)
     else:
         return await handle_platform_choice(update, context)
 
-async def show_platforms(query: Update, context: CallbackContext):
+
+
+
+async def handle_data_change(update: Update, context: CallbackContext) -> int:
+    user_id = update.message.from_user.id
+    change_request = update.message.text
+
+    if change_request == "Имя":
+        await update.message.reply_text("Введите новое имя:")
+        return NAME_REQUEST
+    elif change_request == "Категория":
+        await update.message.reply_text("Введите новую категорию:")
+        return CONNECT
+    elif change_request == "Площадка":
+        await show_platforms(update, context)
+        return PLATFORM
+    elif change_request == "Номер заказа":
+        await update.message.reply_text("Введите новый номер заказа:")
+        return ORDER_NUMBER
+    elif change_request == "Контакт":
+        await update.message.reply_text(messages["contact_request"])
+        return CONTACT
+    elif change_request == "Email":
+        await update.message.reply_text(messages["email_request"])
+        return EMAIL
+    elif change_request == "Дата рождения":
+        await update.message.reply_text(messages["birthday_request"])
+        return BIRTHDAY
+    else:
+        await update.message.reply_text("Некорректный выбор. Попробуйте еще раз.")
+        return FINAL
+
+async def show_personal_cabinet(update: Update, context: CallbackContext) -> int:
+    if update.message:
+        user_id = update.message.from_user.id
+        chat_id = update.message.chat_id
+    elif update.callback_query:
+        user_id = update.callback_query.from_user.id
+        chat_id = update.callback_query.message.chat_id
+    else:
+        logger.error("No valid user found in update")
+        return PERSONAL_CABINET
+
+    user_info = user_data.get(user_id, {})
+
+    summary = (
+        f"Имя: {user_info.get('name', 'Не указано')}\n"
+        f"Категория: {user_info.get('category', 'Не указано')}\n"
+        f"Площадка: {user_info.get('platform', 'Не указано')}\n"
+        f"Номер заказа: {user_info.get('order_number', 'Не указано')}\n"
+        f"Контакт: {user_info.get('contact', 'Не указано')}\n"
+        f"Email: {user_info.get('email', 'Не указано')}\n"
+        f"Дата рождения: {user_info.get('birthday', 'Не указано')}\n"
+    )
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=f"Ваши данные:\n{summary}",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("Главное меню", callback_data="main_menu")]
+        ])
+    )
+    user_data[user_id]['stage'] = PERSONAL_CABINET
+    return PERSONAL_CABINET
+
+
+async def show_platforms(update: Update, context: CallbackContext) -> int:
+    query = update.callback_query
     user_id = query.from_user.id
     
     if 'instruction_message_ids' in user_data[user_id]:
@@ -373,25 +469,7 @@ async def handle_birthday(update: Update, context: CallbackContext) -> int:
         day, month, year = map(int, birthday.split('.'))
         if 1 <= day <= 31 and 1 <= month <= 12 and 1900 <= year <= 2100:
             user_data[user_id]['birthday'] = birthday
-            await send_messages(update.message, context, [
-                messages["feedback"],
-                # messages["feedback_form"]
-            ], parse_mode='HTML')
-            user_data[user_id]['stage'] = FINAL
-            await asyncio.sleep(2)
-            await update.message.reply_text(messages["thank_you"])
-
-            user_info = user_data.get(user_id)
-            summary = (
-                f"Имя: {user_info['name']}\n"
-                f"Категория: {user_info['category']}\n"
-                f"Площадка: {user_info['platform']}\n"
-                f"Номер заказа: {user_info['order_number']}\n"
-                f"Контакт: {user_info['contact']}\n"
-                f"Email: {user_info['email']}\n"
-                f"Дата рождения: {user_info['birthday']}\n"
-            )
-            await update.message.reply_text(f"Ваша информация:\n{summary}")
+            await confirm_user_data(update, context)
             return FINAL
         else:
             raise ValueError
@@ -399,13 +477,35 @@ async def handle_birthday(update: Update, context: CallbackContext) -> int:
         await update.message.reply_text("Некорректная дата. Пожалуйста, введите дату в формате ДД.ММ.ГГГГ.")
         return BIRTHDAY
 
+async def confirm_user_data(update: Update, context: CallbackContext) -> int:
+    user_id = update.message.from_user.id
+    user_info = user_data[user_id]
+    
+    summary = (
+        f"Имя: {user_info['name']}\n"
+        f"Категория: {user_info['category']}\n"
+        f"Площадка: {user_info['platform']}\n"
+        f"Номер заказа: {user_info['order_number']}\n"
+        f"Контакт: {user_info['contact']}\n"
+        f"Email: {user_info['email']}\n"
+        f"Дата рождения: {user_info['birthday']}\n"
+    )
+    await update.message.reply_text(
+        f"Ваша информация:\n{summary}\nВсе ли данные верны?",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("Да", callback_data="confirm_yes")],
+            [InlineKeyboardButton("Нет", callback_data="confirm_no")]
+        ])
+    )
+    return FINAL
+
 def error_handler(update: Update, context: CallbackContext) -> None:
     logger.warning('Update "%s" caused error "%s"', update, context.error)
     if isinstance(context.error, Exception):
         try:
             if update and update.message:
-                update.message.reply_text("Произошла ошибка. Пожалуйста, попробуйте позже.")
+                asyncio.create_task(update.message.reply_text("Произошла ошибка. Пожалуйста, попробуйте позже."))
             elif update and update.callback_query:
-                update.callback_query.message.reply_text("Произошла ошибка. Пожалуйста, попробуйте позже.")
+                asyncio.create_task(update.callback_query.message.reply_text("Произошла ошибка. Пожалуйста, попробуйте позже."))
         except Exception as e:
             logger.error(f"Error sending error message: {e}")

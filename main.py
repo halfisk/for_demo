@@ -2,8 +2,12 @@ import logging
 import os
 from dotenv import load_dotenv
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, ConversationHandler, filters
-from handlers import start, request_name, send_intro_message, handle_consent, handle_platform_choice, handle_stage, handle_callback_query, error_handler
-from config import CONNECT, NAME_REQUEST, CONSENT, PLATFORM, ORDER_NUMBER, CONTACT, EMAIL, BIRTHDAY, FEEDBACK, FINAL
+from handlers import (
+    handle_data_change, start, request_name, send_intro_message, handle_consent, 
+    handle_platform_choice, handle_stage, handle_callback_query, error_handler, 
+    show_main_menu, show_personal_cabinet
+)
+from config import CONNECT, NAME_REQUEST, CONSENT, PLATFORM, ORDER_NUMBER, CONTACT, EMAIL, BIRTHDAY, FINAL, MAIN_MENU, PERSONAL_CABINET
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -27,8 +31,18 @@ def main() -> None:
             CONTACT: [MessageHandler(filters.CONTACT, handle_stage)],
             EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_stage)],
             BIRTHDAY: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_stage)],
-            FEEDBACK: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_stage)],
-            FINAL: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_stage)],
+            FINAL: [
+                CallbackQueryHandler(handle_callback_query, pattern='^confirm_yes$|^confirm_no$|^main_menu$|^personal_cabinet$'),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_data_change)
+            ],
+            MAIN_MENU: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, show_main_menu),
+                CallbackQueryHandler(handle_callback_query, pattern='^personal_cabinet$|^main_menu$')
+            ],
+            PERSONAL_CABINET: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, show_personal_cabinet),
+                CallbackQueryHandler(handle_callback_query, pattern='^main_menu$')
+            ],
         },
         fallbacks=[CommandHandler('start', start)],
     )
