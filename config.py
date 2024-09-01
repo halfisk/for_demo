@@ -155,13 +155,8 @@ photo_paths = {
     ]
 }
 
-pdf_paths = {
-    'Wildberries': 'documents/Order_Number_Instruction_WB.pdf'
-}
+CONNECT, NAME_REQUEST, CONSENT, PLATFORM, ORDER_NUMBER, CONTACT, EMAIL, BIRTHDAY, FINAL, MAIN_MENU, PERSONAL_CABINET, ORDER_NUMBER_PROMPT = range(12)
 
-(
-    CONNECT, NAME_REQUEST, CONSENT, PLATFORM, ORDER_NUMBER, CONTACT, EMAIL, BIRTHDAY, FEEDBACK, FINAL, MAIN_MENU, PERSONAL_CABINET, ORDER_NUMBER_PROMPT
-) = range(13)
 
 category_cases = {
     'Постельное белье': 'постельном белье',
@@ -188,3 +183,5 @@ backup={
         'С заботой о Вашем комфорте, команда MirrorSleep.'
     )
 }
+
+user_data = {}

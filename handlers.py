@@ -5,7 +5,7 @@ from telegram import InputMediaPhoto, Update, InlineKeyboardButton, InlineKeyboa
 from telegram.ext import CallbackContext
 from qr_codes import get_product_category
 from utils import is_cyrillic, send_messages
-from config import CONNECT, NAME_REQUEST, CONSENT, PLATFORM, ORDER_NUMBER, CONTACT, EMAIL, BIRTHDAY, FINAL, MAIN_MENU, PERSONAL_CABINET, ORDER_NUMBER_PROMPT, messages, photo_paths, category_cases, platforms, pdf_paths
+from config import CONNECT, NAME_REQUEST, CONSENT, PLATFORM, ORDER_NUMBER, CONTACT, EMAIL, BIRTHDAY, FINAL, MAIN_MENU, PERSONAL_CABINET, ORDER_NUMBER_PROMPT, messages, photo_paths, category_cases, platforms
 
 logger = logging.getLogger(__name__)
 
@@ -220,37 +220,6 @@ async def send_platform_photos(context: CallbackContext, query: Update, platform
     else:
         await query.message.reply_text("На данный момент у нас нет инструкций для выбранной платформы.")
         logger.info("No instructions available for the chosen platform")
-
-async def show_pdf(context: CallbackContext, query: Update, platform: str):
-    pdf_path = pdf_paths.get(platform)
-    if pdf_path:
-        try:
-            message_ids = user_data[query.from_user.id].get('instruction_message_ids', [])
-            for message_id in message_ids:
-                try:
-                    await context.bot.delete_message(chat_id=query.message.chat_id, message_id=message_id)
-                except Exception as e:
-                    logger.warning(f"Could not delete message {message_id}: {e}")
-
-            with open(pdf_path, 'rb') as pdf_file:
-                message = await context.bot.send_document(
-                    chat_id=query.message.chat_id,
-                    document=pdf_file
-                )
-                message_id = message.message_id
-                logger.info(f"Sent PDF: {message_id}")
-        except Exception as e:
-            logger.error(f"Error sending PDF: {e}")
-            await query.message.reply_text("Произошла ошибка при отправке PDF. Пожалуйста, попробуйте позже.")
-            return
-
-        user_data[query.from_user.id]['instruction_message_ids'] = [message_id]
-
-    else:
-        await query.message.reply_text("На данный момент у нас нет инструкций для выбранной платформы в формате PDF.")
-
-    await query.message.reply_text(messages["order_number_prompt"])
-    logger.info("Displayed order number prompt")
 
 async def show_photos(context: CallbackContext, query: Update, platform: str):
     photos = photo_paths.get(platform, [])
