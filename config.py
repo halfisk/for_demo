@@ -85,11 +85,74 @@ messages = {
 }
 
 photo_paths = {
-    'Ozon': ['photo/instructions/ozon/ozon_instruction.jpg'],
-    'Wildberries': ['photo/instructions/wb/payment_icons_step_1.png', 
-                    'photo/instructions/wb/finance_step_2.png',
-                    'photo/instructions/wb/electronic_check_step_3.png'
-                    ]
+    'Ozon': [
+        {
+            'path': 'photo/instructions/ozon/ozon_step_1.png',
+            'text': 'Заходим в приложение Ozon, далее переходим в личный кабинет, для этого необходимо нажать на иконку в правом нижнем услугу.'
+        },
+        {
+            'path': 'photo/instructions/ozon/ozon_step_2.png',
+            'text': 'Далее листаем вниз страницы и находим кнопку Заказы, нажимаем на нее.'
+        },
+        {
+            'path': 'photo/instructions/ozon/ozon_step_3.png',
+            'text': 'Далее находим наш заказ, переходим в него.'
+        },
+        {
+            'path': 'photo/instructions/ozon/ozon_step_4.png',
+            'text': 'Далее копируем наш номер заказа.'
+        }
+    ],
+    'Wildberries': [
+        {
+            'path': 'photo/instructions/wb/payment_icons_step_1.png',
+            'text': 'Заходим в приложение Wildberries, далее переходим в личный кабинет, для этого необходимо нажать на иконку в правом нижнем услугу.'
+        }, 
+        {
+            'path': 'photo/instructions/wb/finance_step_2.png',
+            'text': 'Далее листаем вниз страницы и находим кнопку Финансы, нажимаем на нее.'
+        }, 
+        {
+            'path': 'photo/instructions/wb/electronic_check_step_3.png',
+            'text': 'Далее выбираем вкладку Электронные чеки (Эл. Чеки) и находим покупку нашего продукта, переходим в нужный чек.'
+        }, 
+        {
+            'path': 'photo/instructions/wb/cheque_step_4.png',
+            'text': 'Находим в чеке покупку у бренда “Mirror Sleep” и копируем номер заказа.'
+        }
+    ],
+    'Мегамаркет': [
+        {
+            'path': 'photo/instructions/megamarket/megamarket_step_1.png',
+            'text': 'Заходим в приложение Мегамаркет, далее переходим в личный кабинет, для этого необходимо нажать на иконку в правом нижнем услугу.'
+        },
+        {
+            'path': 'photo/instructions/megamarket/megamarket_step_2.png',
+            'text': 'Далее листаем вниз, находим кнопку Заказы, нажимаем на нее.'
+        },
+        {
+            'path': 'photo/instructions/megamarket/megamarket_step_3.png',
+            'text': 'Далее находим наш заказ, переходим в него.'
+        },
+        {
+            'path': 'photo/instructions/megamarket/megamarket_step_4.png',
+            'text': 'Далее находим номер доставки (заказа) и копируем его.'
+        }
+    ],
+    'ЯндексМаркет': [
+        {
+            'path': 'photo/instructions/yandex/yandex_step_1.png',
+            'text': 'Заходим в приложение Яндекс маркет, далее переходим в личный кабинет, для этого необходимо нажать на иконку в правом нижнем услугу.'
+        },
+        {
+            'path': 'photo/instructions/yandex/yandex_step_2.png',
+            'text': 'Далее находим кнопку Заказы, нажимаем на нее.'
+        },
+        {
+            'path': 'photo/instructions/yandex/yandex_step_3.png',
+            'text': 'Далее находим наш заказ, переходим в него и копируем.'
+        }
+    ]
 }
 
 pdf_paths = {
@@ -97,8 +160,8 @@ pdf_paths = {
 }
 
 (
-    CONNECT, NAME_REQUEST, CONSENT, PLATFORM, ORDER_NUMBER, CONTACT, EMAIL, BIRTHDAY, FEEDBACK, FINAL, MAIN_MENU, PERSONAL_CABINET
-) = range(12)
+    CONNECT, NAME_REQUEST, CONSENT, PLATFORM, ORDER_NUMBER, CONTACT, EMAIL, BIRTHDAY, FEEDBACK, FINAL, MAIN_MENU, PERSONAL_CABINET, ORDER_NUMBER_PROMPT
+) = range(13)
 
 category_cases = {
     'Постельное белье': 'постельном белье',
@@ -110,7 +173,7 @@ platforms = [
     {"name": "Ozon", "callback_data": "Ozon"},
     {"name": "Wildberries", "callback_data": "Wildberries"},
     {"name": "Мегамаркет", "callback_data": "Мегамаркет"},
-    {"name": "Яндекс маркет", "callback_data": "Яндекс маркет"}
+    {"name": "ЯндексМаркет", "callback_data": "ЯндексМаркет"}
 ]
 
 
